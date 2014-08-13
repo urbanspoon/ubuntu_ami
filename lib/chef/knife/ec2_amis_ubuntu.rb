@@ -43,15 +43,15 @@ module KnifePlugins
       region.gsub(/-1/,'').gsub(/-/,'_')
     end
 
-    # Indicates whether a particular image has EBS root volume.
+    # Indicates whether a particular image has a root volume other than instance-store.
     #
     # === Parameters
     # store<String>:: comes from Ubuntu::Ami#root_store
     #
     # === Returns
-    # String:: "_ebs" if the #root_store is EBS, otherwise empty.
+    # String:: returns underscored #root_store if the #root_store is not instance-store, otherwise empty.
     def disk_store(store)
-      store =~ /ebs/ ? "_ebs" : ''
+      store =~ /instance-store/ ? '' : "_#{store.gsub(/-/,'_')}"
     end
 
     # Indicates whether the architecture type is a large or small AMI.
@@ -80,8 +80,8 @@ module KnifePlugins
     # === Returns
     # String:: The region, arch and root_store (if EBS) concatenated
     # with underscore (_).
-    def build_type(region, arch, root_store)
-      "#{region_fix(region)}_#{size_of(arch)}#{disk_store(root_store)}"
+    def build_type(region, arch, root_store, virtualization_type)
+      "#{region_fix(region)}_#{size_of(arch)}#{disk_store(root_store)}_#{virtualization_type}"
     end
 
     # Iterates over the AMIs available for the specified distro.
@@ -94,7 +94,7 @@ module KnifePlugins
     def list_amis(distro)
       amis = Hash.new
       Ubuntu.release(distro).amis.each do |ami|
-        amis[build_type(ami.region, ami.arch, ami.root_store)] = ami.name
+        amis[build_type(ami.region, ami.arch, ami.root_store, ami.virtualization_type)] = ami.name
       end
       amis
     end
